@@ -13,5 +13,9 @@
     "security"
   ],
   "author": "DecentM",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "node-dhcpd": "git+https://github.com/glaszig/node-dhcpd.git",
+    "node-named": "0.0.1"
+  }
 }
