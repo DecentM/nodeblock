@@ -17,7 +17,11 @@
   "dependencies": {
     "address": "^1.0.1",
     "dns-express": "^1.4.1",
+    "events": "^1.1.1",
+    "fs": "0.0.1-security",
     "is-reachable": "^2.2.0",
-    "node-dhcpd": "git+https://github.com/glaszig/node-dhcpd.git"
+    "mongodb": "^2.2.22",
+    "node-dhcpd": "git+https://github.com/glaszig/node-dhcpd.git",
+    "sleep": "^5.1.0"
   }
 }
