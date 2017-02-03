@@ -15,7 +15,9 @@
   "author": "DecentM",
   "license": "MIT",
   "dependencies": {
-    "node-dhcpd": "git+https://github.com/glaszig/node-dhcpd.git",
-    "node-named": "0.0.1"
+    "address": "^1.0.1",
+    "dns-express": "^1.4.1",
+    "is-reachable": "^2.2.0",
+    "node-dhcpd": "git+https://github.com/glaszig/node-dhcpd.git"
   }
 }
