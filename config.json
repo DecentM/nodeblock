@@ -1,9 +1,6 @@
 {
-    "mongo": {
-        "comment": "If uri is not empty, everything else is ignored and the URI is used instead. It must start with mongodb://",
-        "uri": "",
-        "host": "127.0.0.1",
-        "port": 27017,
-        "database": "nodeblock"
-    }
+    "blocklists": [
+        "https://mirror1.malwaredomains.com/files/domains.txt"
+    ],
+    "port": 53
 }

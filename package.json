@@ -1,7 +1,7 @@
 {
   "name": "nodeblock",
   "version": "0.0.1",
-  "description": "A NodeJS DNS blocker",
+  "description": "A NodeJS DNS server for slow internet connections",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -14,14 +14,20 @@
   ],
   "author": "DecentM",
   "license": "MIT",
+  "devDependencies": {
+    "eslint": "^4.0.0",
+    "eslint-config-nodesecurity": "^1.3.1",
+    "eslint-config-standard": "^10.2.1",
+    "eslint-plugin-import": "^2.2.0",
+    "eslint-plugin-node": "^5.0.0",
+    "eslint-plugin-promise": "^3.5.0",
+    "eslint-plugin-security": "^1.3.0",
+    "eslint-plugin-standard": "^3.0.1"
+  },
   "dependencies": {
-    "address": "^1.0.1",
+    "chalk": "^1.1.3",
     "dns-express": "^1.4.1",
-    "events": "^1.1.1",
-    "fs": "0.0.1-security",
-    "is-reachable": "^2.2.0",
-    "mongodb": "^2.2.22",
-    "node-dhcpd": "git+https://github.com/glaszig/node-dhcpd.git",
-    "sleep": "^5.1.0"
+    "lokijs": "^1.5.0",
+    "q": "^1.5.0"
   }
 }
