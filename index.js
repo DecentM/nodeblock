@@ -1,19 +1,18 @@
-/* jshint esversion:6, undef: false */
+/* eslint no-console:0 */
+
+const config = require('./config.json')
 
 const dns = require('dns')
 const dnsExpress = require('dns-express')
 const Loki = require('lokijs')
 const chalk = require('chalk')
-const Q = require('q')
 
 const server = dnsExpress()
 const log = (content) => {
-  // eslint-disable-next-line no-console
   console.log(chalk.cyan(JSON.stringify(content)))
 }
-const config = require('./config.json')
 
-let records = null
+let records = []
 const databaseInitialize = () => {
   records = db.getCollection('records')
   if (records === null) {
@@ -30,75 +29,84 @@ const db = new Loki('nodeblock.db', {
   'autosaveInterval': 2000
 })
 
-const requestRecord = (domain) => {
-  const deferred = Q.defer()
+const requestRecord = (question) => {
+  return new Promise((resolve, reject) => {
+    let answerObj = {}
 
-  dns.resolve(domain, (err, content) => {
-    if (err) {
-      deferred.reject(err)
-    } else {
-      deferred.resolve(content)
+    const dbResult = records.find({
+      'name': question.name,
+      'type': question.typeName.toUpperCase()
+    })
+
+    if (dbResult.length > 0) {
+      dbResult[0].fromDb = true
+      resolve(dbResult[0])
+    }
+
+    try {
+      dns.resolve(question.name, question.typeName.toUpperCase(), (error, record) => {
+        if (error) {
+          reject(new Error(error))
+        } else {
+          switch (question.typeName) {
+            case 'a' || 'aaaa':
+              answerObj.address = record[0]
+              break
+            case 'mx':
+              answerObj = record[0]
+              break
+            case 'txt' || 'ns' || 'cname' || 'ptr':
+              answerObj.data = record[0]
+              break
+            default:
+              answerObj.data = record[0]
+              answerObj.address = record[0]
+              break
+          }
+
+          answerObj.type = question.typeName.toUpperCase()
+          answerObj.name = question.name
+          answerObj.ttl = question.ttl || 300
+
+          resolve(answerObj)
+        }
+      })
+    } catch (error) {
+      reject(new Error(error))
     }
   })
-  return deferred.promise
 }
 
 const storeRecord = (record) => {
-  if (typeof record === 'object') {
-    log(`Storing record of ${record.name}, ${record.value} in database`)
-    records.insert(record)
-  } else {
-    throw new TypeError(`Not storing invalid record ${JSON.stringify(record)}`)
-  }
+  return new Promise((resolve, reject) => {
+    try {
+      records.insert(record)
+      resolve(record)
+    } catch (error) {
+      reject(new Error(error))
+    }
+  })
 }
 
 const runServer = () => {
+  log(`Starting server on port ${config.port}`)
   server.listen(config.port)
 }
 
-server.use((req, res, next) => {
-  if (req.questions.length > 1) {
-    throw new Error('More than one question in one query is not supported')
-  } else {
-    const question = req.questions[0]
-    const dbResult = records.find({'name': question.name})
+server.use((packet, respond, next) => {
+  const question = packet.questions[0]
 
-    if (dbResult.length > 0) {
-      log(`Response for ${question.name} found in database, responding with ${dbResult[0].value}, then querying`)
-      res.a({
-        'name':    question.name,
-        'address': dbResult[0].value,
-        'ttl':     600
-      })
-      res.end()
-      requestRecord(question.name)
-        .then((value) => {
-          log(`Async remote query complete, got ${value[0]}`)
-          storeRecord({
-            'name':  question.name,
-            'value': value[0]
-          })
-        })
-    } else {
-      log(`Response for ${question.name} not found in database, querying`)
-      dns.resolve(question.name, (err, content) => {
-        if (err) {
-          log('An error occurred')
-          throw err
-        } else {
-          log(`Sync remote query complete, got ${content[0]}`)
-          res.a({
-            'name':    question.name,
-            'address': content[0],
-            'ttl':     600
-          })
-          res.end()
-          storeRecord({
-            'name':  question.name,
-            'value': content[0]
-          })
-        }
-      })
-    }
-  }
+  requestRecord(question)
+    .then((remoteReply) => {
+      respond[remoteReply.type.toLowerCase()](remoteReply)
+      respond.end()
+      if (!remoteReply.fromDb) {
+        storeRecord(remoteReply)
+      }
+    })
+    .catch((error) => {
+      log('An error occurred while querying')
+      respond.end()
+      console.error(error)
+    })
 })

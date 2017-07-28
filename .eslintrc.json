@@ -43,7 +43,7 @@
     "complexity": 1,
     "curly": [2,"all"],
     "default-case": 2,
-    "dot-notation": [2,{"allowKeywords":false}],
+    "dot-notation": [2,{"allowKeywords":true}],
     "dot-location": [2,"property"],
     "eqeqeq": [2,"smart"],
     "guard-for-in": 1,
@@ -172,7 +172,7 @@
     "require-yield": 2,
     "max-depth": [1,5],
     "max-params": [2,5],
-    "max-statements": [1,{"max":11}],
+    "max-statements": [0,{"max":11}],
     "no-bitwise": 2,
     "no-plusplus": 2
   }
