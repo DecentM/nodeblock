@@ -1,9 +1,14 @@
-const config = require('./config.json')
-const Loki = require('lokijs')
-// const chalk = require('chalk')
-const log = require('chalk-console')
+import * as Conf from 'conf'
+const config = new Conf({
+  'cwd':        '.',
+  'configName': 'nodeblock.conf'
+})
 
-module.exports = (table) => {
+import * as Loki from 'lokijs'
+// const chalk = require('chalk')
+import * as log from 'chalk-console'
+
+export function db(table: string) {
   // This promise initializes the databases and resolves when all of them
   // are done loading
   return new Promise((resolve, reject) => {
@@ -26,8 +31,8 @@ module.exports = (table) => {
       db = new Loki(`${table}.db`, {
         'autoload':         true,
         'autoloadCallback': databaseInitialize,
-        'autosave':         !!config.autosaveInterval,
-        'autosaveInterval': config.autosaveInterval
+        'autosave':         !!config.get('autosaveInterval'),
+        'autosaveInterval': config.get('autosaveInterval')
       })
     } catch (error) {
       log.error(`Failed to initialize ${table} database`)

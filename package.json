@@ -4,7 +4,7 @@
   "description": "A NodeJS DNS server for slow internet connections",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "ts-node index.js"
   },
   "keywords": [
     "nodejs",
@@ -25,9 +25,14 @@
     "eslint-plugin-standard": "^3.0.1"
   },
   "dependencies": {
+    "@types/lokijs": "^1.2.30",
+    "@types/node": "^8.0.17",
     "chalk-console": "^1.0.1",
+    "conf": "^1.1.2",
     "dns-express": "^1.4.1",
     "lokijs": "^1.5.0",
-    "multicast-dns": "^6.1.1"
+    "multicast-dns": "^6.1.1",
+    "ts-node": "^3.3.0",
+    "typescript": "^2.4.2"
   }
 }

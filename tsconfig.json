@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "allowJs": true,
+        "outDir": "tmp",
+        "target": "es5",
+        "lib": ["es5", "es6", "dom"],
+        "baseUrl": ".",
+        "noImplicitAny": false,
+        "sourceMap": false
+    }
+}
