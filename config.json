@@ -2,5 +2,6 @@
     "blocklists": [
         "https://mirror1.malwaredomains.com/files/domains.txt"
     ],
-    "port": 53
+    "port": 53,
+    "autosaveInterval": 10000
 }

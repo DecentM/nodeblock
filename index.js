@@ -57,7 +57,6 @@ const getLocalRecord = (question) => {
     })
 
     if (dbResult.length > 0) {
-      dbResult[0].fromDb = true
       resolve(dbResult[0])
     } else {
       reject(new Error(dbResult))
@@ -85,17 +84,6 @@ const requestRecord = (question) => {
   })
 }
 
-/* const storeRecord = (record) => {
-  return new Promise((resolve, reject) => {
-    try {
-      records.insert(record)
-      resolve(record)
-    } catch (error) {
-      reject(new Error(error))
-    }
-  })
-} */
-
 const runServer = () => {
   return new Promise((resolve, reject) => {
     try {
@@ -106,8 +94,65 @@ const runServer = () => {
       log.error(`Failed to start DNS server:
     ${error}
       `)
-      reject(new Error())
+      reject(error)
     }
+  })
+}
+
+const recordCached = (record) => {
+  return new Promise((resolve, reject) => {
+    const result = records.find({
+      'address': record.address,
+      'type':    record.type
+    })
+
+    try {
+      if (result.length > 0) {
+        resolve(true)
+      } else {
+        resolve(false)
+      }
+    } catch (error) {
+      log.error(`An error occurred while determining cached status:
+    ${error}
+      `)
+      reject(error)
+    }
+  })
+}
+
+const storeRecord = (record) => {
+  return new Promise((resolve, reject) => {
+    recordCached(record)
+    .then((cached) => {
+      if (cached) {
+        try {
+          records.update(record)
+          resolve()
+        } catch (error) {
+          log.error(`An error occurred while updating database:
+    ${error}
+          `)
+          reject(error)
+        }
+      } else {
+        try {
+          records.insert(record)
+          resolve(record)
+        } catch (error) {
+          log.error(`An error occurred while inserting into database:
+    ${error}
+          `)
+          reject(error)
+        }
+      }
+    })
+    .catch((error) => {
+      log.error(`An error occurred while caching a record:
+    ${error}
+      `)
+      reject(error)
+    })
   })
 }
 
@@ -116,12 +161,21 @@ server.use((packet, respond, next) => {
 
   requestRecord(question)
   .then((remoteReply) => {
-    respond[remoteReply.type.toLowerCase()](remoteReply)
-    respond.end()
     log.info(`Resolved ${question.typeName.toUpperCase()} record for ${question.remote.address} from ${remoteReply.source}
     Domain: ${question.name}
     Result: ${remoteReply.address}
     `)
+    Reflect.deleteProperty(remoteReply, 'source')
+
+    respond[remoteReply.type.toLowerCase()](remoteReply)
+    respond.end()
+
+    storeRecord(remoteReply)
+    .catch((error) => {
+      log.error(`An error occurred while storing a record:
+        ${error}
+        `)
+    })
   })
   .catch((error) => {
     switch (error.code) {
@@ -148,4 +202,5 @@ db('records')
 .then(runServer())
 .catch((error) => {
   log.error(`An error occurred while initializing: ${error}`)
+  throw error
 })
