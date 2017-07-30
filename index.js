@@ -26,6 +26,7 @@ const getRemoteRecord = (question) => {
             break
           case 'mx':
             answerObj = record[0]
+            answerObj.address = answerObj.exchange
             break
           case 'txt' || 'ns' || 'cname' || 'ptr':
             answerObj.data = record[0]
@@ -99,60 +100,15 @@ const runServer = () => {
   })
 }
 
-const recordCached = (record) => {
-  return new Promise((resolve, reject) => {
-    const result = records.find({
-      'address': record.address,
-      'type':    record.type
-    })
-
-    try {
-      if (result.length > 0) {
-        resolve(true)
-      } else {
-        resolve(false)
-      }
-    } catch (error) {
-      log.error(`An error occurred while determining cached status:
-    ${error}
-      `)
-      reject(error)
-    }
-  })
-}
-
 const storeRecord = (record) => {
   return new Promise((resolve, reject) => {
-    recordCached(record)
-    .then((cached) => {
-      if (cached) {
-        try {
-          records.update(record)
-          resolve()
-        } catch (error) {
-          log.error(`An error occurred while updating database:
-    ${error}
-          `)
-          reject(error)
-        }
-      } else {
-        try {
-          records.insert(record)
-          resolve(record)
-        } catch (error) {
-          log.error(`An error occurred while inserting into database:
-    ${error}
-          `)
-          reject(error)
-        }
-      }
-    })
-    .catch((error) => {
-      log.error(`An error occurred while caching a record:
-    ${error}
-      `)
-      reject(error)
-    })
+    try {
+      records.update(record)
+      resolve()
+    } catch (error) {
+      records.insert(record)
+      resolve()
+    }
   })
 }
 
@@ -165,17 +121,30 @@ server.use((packet, respond, next) => {
     Domain: ${question.name}
     Result: ${remoteReply.address}
     `)
+
+    if (remoteReply.source === 'online') {
+      storeRecord(remoteReply)
+      .catch((error) => {
+        log.error(`An error occurred while storing a record:
+          ${error}
+        `)
+      })
+    } else if (remoteReply.source === 'database') {
+      getRemoteRecord(question)
+      .then((answer) => {
+        storeRecord(answer)
+      })
+      .catch((error) => {
+        log.error(`An error occurred while storing a record:
+          ${error}
+        `)
+      })
+    }
+
     Reflect.deleteProperty(remoteReply, 'source')
 
     respond[remoteReply.type.toLowerCase()](remoteReply)
     respond.end()
-
-    storeRecord(remoteReply)
-    .catch((error) => {
-      log.error(`An error occurred while storing a record:
-        ${error}
-        `)
-    })
   })
   .catch((error) => {
     switch (error.code) {
@@ -186,6 +155,7 @@ server.use((packet, respond, next) => {
       log.error(`An error occurred while querying:
     ${error}
       `)
+      respond.end()
       break
     }
   })
