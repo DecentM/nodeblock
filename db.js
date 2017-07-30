@@ -14,12 +14,10 @@ module.exports = (table) => {
         rows = db.addCollection(table)
       }
       tables[table] = rows
-      log.info(`${table} database initialized`)
       resolve(tables[table])
     }
 
     try {
-      log.info(`Initializing ${table} database`)
       db = new Loki(`${table}.db`, {
         'autoload':         true,
         'autoloadCallback': databaseInitialize,

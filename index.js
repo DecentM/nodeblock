@@ -69,11 +69,13 @@ const requestRecord = (question) => {
   return new Promise((resolve, reject) => {
     getLocalRecord(question)
     .then((answer) => {
+      answer.source = 'database'
       resolve(answer)
     })
     .catch(() => {
       getRemoteRecord(question)
       .then((answer) => {
+        answer.source = 'online'
         resolve(answer)
       })
       .catch((error) => {
@@ -101,7 +103,9 @@ const runServer = () => {
       log.info(`DNS Server started and listening on port ${config.port}`)
       resolve()
     } catch (error) {
-      log.error(`Failed to start DNS server: ${error}`)
+      log.error(`Failed to start DNS server:
+    ${error}
+      `)
       reject(new Error())
     }
   })
@@ -114,10 +118,22 @@ server.use((packet, respond, next) => {
   .then((remoteReply) => {
     respond[remoteReply.type.toLowerCase()](remoteReply)
     respond.end()
+    log.info(`Resolved ${question.typeName.toUpperCase()} record for ${question.remote.address} from ${remoteReply.source}
+    Domain: ${question.name}
+    Result: ${remoteReply.address}
+    `)
   })
   .catch((error) => {
-    log.error(`An error occurred while querying: ${error}`)
-    respond.end()
+    switch (error.code) {
+    case 'ENODATA':
+      respond.end()
+      break
+    default:
+      log.error(`An error occurred while querying:
+    ${error}
+      `)
+      break
+    }
   })
 })
 
