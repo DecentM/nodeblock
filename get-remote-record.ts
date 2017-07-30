@@ -12,8 +12,10 @@ export const getRemoteRecord = (question) => {
       dns.resolve(question.name, question.typeName.toUpperCase(), (error: Error, records: (Array<any> | string)) => {
         if (typeof records === 'string') {
           const stringRecords: string = records
-
           records = [stringRecords]
+        } else if (typeof records === 'object' && !(records instanceof Array)) {
+          const objectRecords: object = records
+          records = [objectRecords]
         }
 
         if (error) {
@@ -23,18 +25,6 @@ export const getRemoteRecord = (question) => {
         } else {
           // This switch sets values required for different record types
           switch (question.typeName) {
-          case 'a' || 'aaaa' || 'cname' || 'txt' || 'ns' || 'ptr':
-            const stdAnswers: Array<Ifaces.standard> = []
-            records.forEach((record) => {
-              stdAnswers.push({
-                'type': question.typeName.toUpperCase(),
-                'name': question.name,
-                'ttl': question.ttl || 300,
-                'address': record
-              })
-            })
-            answers = stdAnswers
-            break
           case 'mx':
             const mxAnswers: Array<Ifaces.MX> = []
             records.forEach((record) => {
@@ -63,10 +53,14 @@ export const getRemoteRecord = (question) => {
                 'refresh': record.refresh,
                 'retry': record.retry,
                 'expire': record.expire,
+                'expiration': record.expiration || record.expire,
                 'minttl': record.minttl,
+                'minimum': record.minimum || record.minttl,
                 'type': 'SOA',
                 'name': question.name,
-                'ttl': question.ttl || 300
+                'ttl': question.ttl || 300,
+                'primary': record.primary || record.hostmaster,
+                'admin': record.admin || record.hostmaster
               })
             })
             answers = soaAnswers
@@ -85,8 +79,22 @@ export const getRemoteRecord = (question) => {
             })
             answers = srvAnswers
             break
+          case 'any':
+            const anyAnswers: Array<any> = []
+            answers = anyAnswers
+          break
           default:
-            reject(new Error(`Type ${question.typeName.toUpperCase()} is not registered or otherwise invalid`))
+            const stdAnswers: Array<Ifaces.standard> = []
+            records.forEach((record) => {
+              stdAnswers.push({
+                'type': question.typeName.toUpperCase(),
+                'name': question.name,
+                'ttl': question.ttl || 300,
+                'address': record,
+                'data': record
+              })
+            })
+            answers = stdAnswers
             break
           }
 

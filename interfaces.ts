@@ -13,7 +13,8 @@ export interface naptrEntry extends Object {
 }
 
 export interface standard extends record {
-  'address': Array<string>
+  'address': Array<string>,
+  'data'?: any
 }
 
 export interface MX extends standard {
@@ -31,7 +32,11 @@ export interface SOA extends record {
   'refresh': number,
   'retry': number,
   'expire': number,
-  'minttl': number
+  'minttl': number,
+  'minimum': number,
+  'primary': string,
+  'admin': string,
+  'expiration': number
 }
 export interface SRV extends record {
   'priority': number,
@@ -57,6 +62,10 @@ export interface InternalAnswer extends record {
   'retry'?: number,
   'expire'?: number,
   'minttl'?: number,
+  'minimum'?: number,
+  'primary'?: string,
+  'admin'?: string,
+  'expiration'?: number,
   'weight'?: number,
   'port'?: number,
   'source': 'database' | 'online'

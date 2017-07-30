@@ -96,6 +96,12 @@ const storeRecord = (record) => {
     //
     // There's not a lot of reasons this can fail, because once the db
     // is initialized, it resides in memory
+    const alreadyIn = records.find(record).length > 0
+    if (alreadyIn) {
+      reject(new Error(`The object is already in the database:
+    ${JSON.stringify(record)}
+      `))
+    }
     try {
       records.insert(record)
       resolve(true)
@@ -113,7 +119,7 @@ server.use((packet, respond, next) => {
   // Request a record from wherever
   requestRecord(question)
   .then((replies: Ifaces.IfinalReply) => {
-    log.info(`Resolved ${replies.length} records for ${question.remote.address} from ${replies.source}
+    log.info(`Resolved ${replies.length} record(s) for ${question.remote.address} from ${replies.source}
     Domain: ${question.name}
     `)
 
