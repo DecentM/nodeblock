@@ -9,6 +9,7 @@ import * as log from 'chalk-console'
 import * as dnsExpress from 'dns-express'
 import { getRemoteRecord } from './get-remote-record'
 import * as dns from 'dns'
+import * as handler from './error-handler'
 
 import * as Ifaces from './interfaces'
 
@@ -82,9 +83,7 @@ const runServer = () => {
     server.listen(config.get('port'))
     log.info(`DNS Server started and listening on port ${config.get('port')}`)
   } catch (error) {
-    log.error(`Failed to start DNS server:
-  ${error.stack}
-    `)
+    handler.handle(error)
   }
 }
 
@@ -144,9 +143,7 @@ server.use((packet, respond, next) => {
       `)
     })
     .catch((error) => {
-      log.error(`An error occurred while resolving the reverse hostname:
-    IP address: ${question.remote.address}
-      `)
+      handler.handle(error)
     })
 
     switch (replies.source) {
@@ -155,9 +152,7 @@ server.use((packet, respond, next) => {
         respond[reply.type.toLowerCase()](reply)
         storeRecord(reply)
         .catch((error) => {
-          log.error(`An error occurred while storing a record:
-    ${error.stack}
-          `)
+          handler.handle(error)
         })
       })
       break
@@ -173,16 +168,12 @@ server.use((packet, respond, next) => {
           remoteReplies.forEach((remoteReply) => {
             storeRecord(remoteReply)
             .catch((error) => {
-              log.error(`An error occurred while storing a remote record:
-    ${error.stack}
-              `)
+              handler.handle(error)
             })
           })
         })
         .catch((error) => {
-          log.error(`An error occurred while remotely querying a record:
-    ${error.stack}
-          `)
+          handler.handle(error)
         })
       })
       break
@@ -202,9 +193,7 @@ server.use((packet, respond, next) => {
       respond.end()
       break
     default:
-      log.error(`An error occurred while querying:
-    ${error.stack}
-      `)
+      handler.handle(error)
       respond.end()
       break
     }
@@ -213,8 +202,6 @@ server.use((packet, respond, next) => {
 
 dbPromise.then(runServer())
 .catch((error) => {
-  log.error(`An error occurred while initializing:
-    ${error.stack}
-  `)
+  handler.handle(error)
   throw error
 })
