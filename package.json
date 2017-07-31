@@ -4,7 +4,8 @@
   "description": "A NodeJS DNS server for slow internet connections",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node index.js"
+    "start": "ts-node index.ts",
+    "dev": "rm *.db; nodemon --watch '**/*.ts' --ignore '**/*.spec.ts' --exec 'ts-node' index.ts"
   },
   "keywords": [
     "nodejs",
@@ -32,6 +33,7 @@
     "dns-express": "^1.4.1",
     "lokijs": "^1.5.0",
     "multicast-dns": "^6.1.1",
+    "nodemon": "^1.11.0",
     "pretty-error": "^2.1.1",
     "ts-node": "^3.3.0",
     "typescript": "^2.4.2"
