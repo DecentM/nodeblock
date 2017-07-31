@@ -1,6 +1,7 @@
 import * as PrettyError from 'pretty-error'
-const pe = new PrettyError()
 import * as log from 'chalk-console'
+
+const pe = new PrettyError()
 
 pe.appendStyle({
   'pretty-error > header > title > kind': {
@@ -32,7 +33,7 @@ pe.appendStyle({
   }
 })
 
-export function handle(error: Error) {
+export const handle = (error: Error) => {
   const rendered = pe.render(error)
   log.error(rendered)
 }

@@ -1,51 +1,25 @@
-import * as Conf from 'conf'
-const config = new Conf({
-  'cwd':        '.',
-  'configName': 'nodeblock.conf'
-})
+import { config } from './config'
 
-import { db } from './db'
-import * as log from 'chalk-console'
-import * as dnsExpress from 'dns-express'
-import { getRemoteRecord } from './get-remote-record'
-import * as dns from 'dns'
-import * as handler from './error-handler'
+import {
+  dbPromise,
+  records,
+  getLocalRecord,
+  storeRecord
+} from './db'
 
+import {
+  getRemoteRecord,
+  getReverseHost
+} from './network'
+
+import { handle } from './error-handler'
+import { server } from './server'
 import * as Ifaces from './interfaces'
 
-const dbPromise = (db as any)('records')
-const server = dnsExpress()
+import * as log from 'chalk-console'
+import * as dns from 'dns'
 
-let records
-// Database initialization logic
-dbPromise.then((recordsTable) => {
-  records = recordsTable
-})
-
-// This promise does the same as getRemoteRecord, just from the Lokijs database
-const getLocalRecord = (question) => {
-  return new Promise((resolve, reject) => {
-    // Put the search results in dbResult
-    const dbQuery: Ifaces.IdbQuery = {
-      'name': question.name,
-      'type': question.typeName.toUpperCase()
-    }
-    const dbResult = records.find(dbQuery)
-
-    // Only resolve the promise if we have exactly one result from the db,
-    // otherwise something bad happened or we don't have said record in the
-    // db yet (database === cache)
-    //
-    // If this promise is rejected, we will later assume that we don't have
-    // this record yet.
-    dbResult.source = 'database'
-    if (dbResult.length > 0) {
-      resolve(dbResult)
-    } else {
-      reject(new Error(dbResult))
-    }
-  })
-}
+log.info('Nodeblock is starting')
 
 // This promise ties getRemoteRecord and getLocalRecord together by first
 // trying to resolve itself using getLocalRecord. If that fails, we query
@@ -75,56 +49,6 @@ const requestRecord = (question) => {
   })
 }
 
-// This function starts the server up
-const runServer = () => {
-  // Try starting the dns-express server
-  // If it fails, log the error and reject
-  try {
-    server.listen(config.get('port'))
-    log.info(`DNS Server started and listening on port ${config.get('port')}`)
-  } catch (error) {
-    handler.handle(error)
-  }
-}
-
-// This promise writes a record to the in-memory Lokijs database
-const storeRecord = (record) => {
-  return new Promise((resolve, reject) => {
-    // Try updating the record
-    // If that fails, the record doesn't exist yet, so we create it
-    //
-    // There's not a lot of reasons this can fail, because once the db
-    // is initialized, it resides in memory
-    const alreadyIn = records.find(record).length > 0
-    if (alreadyIn) {
-      reject(new Error(`The object is already in the database:
-    ${JSON.stringify(record)}
-      `))
-    }
-    try {
-      records.insert(record)
-      resolve(true)
-    } catch (error) {
-      reject(error)
-    }
-  })
-}
-
-const getReverseHost = (ip) => {
-  return new Promise((resolve, reject) => {
-    try {
-      dns.reverse((ip as string), (error, hostname: Array<any>) => {
-        if (error) {
-          reject(error)
-        }
-        resolve(hostname)
-      })
-    } catch (error) {
-      reject(error)
-    }
-  })
-}
-
 // The main app logic
 server.use((packet, respond, next) => {
   // We only support one question, so we make sure we only have one
@@ -143,7 +67,7 @@ server.use((packet, respond, next) => {
       `)
     })
     .catch((error) => {
-      handler.handle(error)
+      handle(error)
     })
 
     switch (replies.source) {
@@ -152,7 +76,7 @@ server.use((packet, respond, next) => {
         respond[reply.type.toLowerCase()](reply)
         storeRecord(reply)
         .catch((error) => {
-          handler.handle(error)
+          handle(error)
         })
       })
       break
@@ -168,12 +92,12 @@ server.use((packet, respond, next) => {
           remoteReplies.forEach((remoteReply) => {
             storeRecord(remoteReply)
             .catch((error) => {
-              handler.handle(error)
+              handle(error)
             })
           })
         })
         .catch((error) => {
-          handler.handle(error)
+          handle(error)
         })
       })
       break
@@ -193,15 +117,9 @@ server.use((packet, respond, next) => {
       respond.end()
       break
     default:
-      handler.handle(error)
+      handle(error)
       respond.end()
       break
     }
   })
-})
-
-dbPromise.then(runServer())
-.catch((error) => {
-  handler.handle(error)
-  throw error
 })

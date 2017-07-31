@@ -3,6 +3,21 @@ import * as Ifaces from './interfaces'
 
 // This promise returns the contents of a DNS record from the operating system
 // (i.e. the server abstracted by it)
+export const getReverseHost = (ip) => {
+  return new Promise((resolve, reject) => {
+    try {
+      dns.reverse((ip as string), (error, hostname: Array<any>) => {
+        if (error) {
+          reject(error)
+        }
+        resolve(hostname)
+      })
+    } catch (error) {
+      reject(error)
+    }
+  })
+}
+
 export const getRemoteRecord = (question) => {
   return new Promise((resolve, reject) => {
     let answers: Array<Ifaces.standard> | Array<Ifaces.MX> | Array<Ifaces.NAPTR> | Array<Ifaces.SOA> | Array<Ifaces.SRV> = []
