@@ -15,5 +15,4 @@ By using a local, in-memory database, it replies to DNS requests as fast as poss
 ### There are a few limitations to Nodeblock at this time:
 -   It doesn't block sites yet. This is currently in development.
 -   Only one domain may be asked for at once (This is an issue with the RFC, I don't plan on implementing multiple domains per query. If you have a use case, please feel pree to create a pull request!)
--   Only one address will be returned as a response. This is currently in development.
 -   There is no web interface, because there's not much to control yet.
