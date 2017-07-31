@@ -3,5 +3,12 @@
 		"https://mirror1.malwaredomains.com/files/domains.txt"
 	],
 	"port": 53,
-	"autosaveInterval": 10000
+	"autosaveInterval": 10000,
+	"answerRange": [
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16",
+    "127.0.0.1",
+    "fd00::/8"
+	]
 }
