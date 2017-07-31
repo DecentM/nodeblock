@@ -6,11 +6,11 @@ const config = new Conf({
 
 import { db } from './db'
 import * as log from 'chalk-console'
-
 import * as dnsExpress from 'dns-express'
+import { getRemoteRecord } from './get-remote-record'
+import * as dns from 'dns'
 
 import * as Ifaces from './interfaces'
-import { getRemoteRecord } from './get-remote-record'
 
 const dbPromise = (db as any)('records')
 const server = dnsExpress()
@@ -111,6 +111,21 @@ const storeRecord = (record) => {
   })
 }
 
+const getReverseHost = (ip) => {
+  return new Promise((resolve, reject) => {
+    try {
+      dns.reverse((ip as string), (error, hostname: Array<any>) => {
+        if (error) {
+          reject(error)
+        }
+        resolve(hostname)
+      })
+    } catch (error) {
+      reject(error)
+    }
+  })
+}
+
 // The main app logic
 server.use((packet, respond, next) => {
   // We only support one question, so we make sure we only have one
@@ -119,9 +134,20 @@ server.use((packet, respond, next) => {
   // Request a record from wherever
   requestRecord(question)
   .then((replies: Ifaces.IfinalReply) => {
-    log.info(`Resolved ${replies.length} record(s) for ${question.remote.address} from ${replies.source}
+    getReverseHost(question.remote.address)
+    .then((hostname: Array<any>) => {
+      if (hostname.length === 0) {
+        hostname[0] = question.remote.address
+      }
+      log.info(`Resolved ${replies.length} record(s) for ${hostname} from ${replies.source}
     Domain: ${question.name}
-    `)
+      `)
+    })
+    .catch((error) => {
+      log.error(`An error occurred while resolving the reverse hostname:
+    IP address: ${question.remote.address}
+      `)
+    })
 
     switch (replies.source) {
     case 'online':
