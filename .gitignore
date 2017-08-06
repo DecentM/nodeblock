@@ -1,4 +1,6 @@
 *.db
+nodeblock.conf.json
+start.sh
 
 # Created by https://www.gitignore.io/api/node,bower
 
