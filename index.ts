@@ -73,7 +73,9 @@ server.use((packet, respond, next) => {
         `)
       })
       .catch((error) => {
-        handle(error)
+        log.info(`Resolved ${replies.length} record(s) for ${question.remote.address} from ${replies.source}
+        Domain: ${question.name}
+        `)
       })
 
       switch (replies.source) {
