@@ -125,6 +125,7 @@ server.use((packet, respond, next) => {
         respond.end()
         break
         default:
+        log.error(`An error occurred while responding to ${question.remote.address}`)
         handle(error)
         respond.end()
         break
