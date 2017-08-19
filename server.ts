@@ -1,7 +1,8 @@
 import { config } from './config'
 import { handle } from './error-handler'
-import { dbPromise } from './db'
+import { getDb } from './db'
 import * as log from 'chalk-console'
+import * as dns from 'dns'
 
 import * as dnsExpress from 'dns-express'
 
@@ -19,8 +20,12 @@ const runServer = () => {
   }
 }
 
-dbPromise.then(() => {
+getDb('records').then(() => {
+  dns.setServers(config.get('servers'))
   runServer()
+  log.info(`Using DNS servers:
+    ${JSON.stringify((dns as any).getServers())}
+  `)
 })
 .catch((error) => {
   handle(error)
