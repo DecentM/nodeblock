@@ -17,7 +17,7 @@ export const encounter = (question) => {
   return new Promise((resolve, reject) => {
     getDb('stats')
     .then((contents) => {
-      console.log(contents)
+      // console.log(contents)
     })
   })
 }

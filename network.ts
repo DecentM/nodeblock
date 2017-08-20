@@ -97,15 +97,23 @@ export const getRemoteRecord = (question) => {
         }
 
         if (error) {
-          // Since this is a functional promise, we don't log anything,
-          // just reject with the error
           reject(error)
         } else {
           const answers = processQuestion(question, records)
 
           // Once the answer object has been constructed, resolve the
           // promise with it
-          resolve(answers)
+          if (answers.length === 0) {
+            dns.resolveCname(question.name, (err, cnameAnswers) => {
+              if (error) {
+                reject(error)
+              } else {
+                resolve(cnameAnswers)
+              }
+            })
+          } else {
+            resolve(answers)
+          }
         }
       })
     } catch (error) {

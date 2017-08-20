@@ -2,8 +2,7 @@ import { config } from './config'
 
 import {
   getDb,
-  getLocalRecord,
-  storeRecord
+  getLocalRecord
 } from './db'
 
 import { getRemoteRecord } from './network'
