@@ -86,40 +86,5 @@ export const getLocalRecord = (question) => {
     .catch((error) => {
       handle(error)
     })
-
-    // Only resolve the promise if we have exactly one result from the db,
-    // otherwise something bad happened or we don't have said record in the
-    // db yet (database === cache)
-    //
-    // If this promise is rejected, we will later assume that we don't have
-    // this record yet.
-    /* dbResult.source = 'database'
-    if (dbResult.length > 0) {
-      resolve(dbResult)
-    } else {
-      reject(new Error(dbResult))
-    } */
-  })
-}
-
-// This promise writes a record to the in-memory Lokijs database
-export const storeRecord = (record) => {
-  return new Promise((resolve, reject) => {
-    // Try updating the record
-    // If that fails, the record doesn't exist yet, so we create it
-    //
-    // There's not a lot of reasons this can fail, because once the db
-    // is initialized, it resides in memory
-    try {
-      try {
-        //records.update(record)
-        resolve(true)
-      } catch (error) {
-        //records.insert(record)
-        resolve(true)
-      }
-    } catch (error) {
-      reject(error)
-    }
   })
 }

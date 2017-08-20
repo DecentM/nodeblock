@@ -67,8 +67,7 @@ export interface InternalAnswer extends record {
   'admin'?: string,
   'expiration'?: number,
   'weight'?: number,
-  'port'?: number,
-  'source': 'database' | 'online'
+  'port'?: number
 }
 
 export interface IdbQuery extends Object {

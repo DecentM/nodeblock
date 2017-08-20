@@ -15,6 +15,7 @@ import {
 import { server } from './server'
 import * as Ifaces from './interfaces'
 import * as logic from './logic'
+import * as stats from './stats'
 
 import * as log from 'chalk-console'
 import * as dns from 'dns'
@@ -34,6 +35,7 @@ const requestRecord = (question, respond) => {
     ])
     .then((answer) => {
       resolve(answer)
+      stats.encounter(question)
     })
     .catch((error) => {
       handleDomainErr(error, respond, question)
@@ -50,8 +52,8 @@ server.use((packet, respond, next) => {
     handle(new Error(`Client address is not in the permitted answer range(s):
     Address: ${question.remote.address},
     Permitted range(s): ${config.get('answerRange')}
-    `))
-  } else {
+    `)
+  )} else {
     requestRecord(question, respond)
     .then((replies: Array<Ifaces.InternalAnswer>) => {
       log.info(`Resolved ${replies.length} record(s) for ${question.remote.address}
