@@ -1,7 +1,4 @@
 {
-	"blocklists": [
-		"https://mirror1.malwaredomains.com/files/domains.txt"
-	],
 	"port": 53,
 	"autosaveInterval": 10000,
 	"answerRange": [
@@ -12,6 +9,8 @@
 		"fd00::/8"
 	],
 	"servers": [
-		"10.20.0.10"
+		"10.20.0.10",
+		"10.20.0.1",
+		"8.8.8.8"
 	]
 }

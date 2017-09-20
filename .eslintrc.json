@@ -1,15 +1,18 @@
 {
+  "parser": "babel-eslint",
   "parserOptions": {
-    "ecmaVersion": 6
+    "ecmaVersion": 7
   },
   "plugins": [
-    "security"
+    "security",
+    "async"
   ],
   "extends": [
     "standard",
     "nodesecurity"
   ],
   "rules": {
+    "async/missing-await-in-async-fn": 0,
     "comma-dangle": [2,"never"],
     "no-cond-assign": [2,"always"],
     "no-console": 1,
