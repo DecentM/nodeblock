@@ -45,9 +45,6 @@ const processQuestion = async (question, records) => {
     })
     answers = soaAnswers
     break
-  case 'aaaa':
-    answers = []
-    break
   case 'srv':
     const srvAnswers = []
 
