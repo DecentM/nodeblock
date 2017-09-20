@@ -4,8 +4,8 @@
   "description": "A NodeJS DNS server for slow internet connections",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "rm *.db; nodemon --watch '**/*.js' --exec 'node' index.js"
+    "start": "babel src -d build && node build/index.js",
+    "dev": "rm *.db; nodemon --watch 'src/**/*.js' --exec 'babel-node' src/index.js"
   },
   "keywords": [
     "nodejs",
@@ -27,11 +27,18 @@
   },
   "dependencies": {
     "await-to-js": "^1.0.1",
+    "babel-cli": "^6.26.0",
     "babel-eslint": "^8.0.0",
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-env": "^1.6.0",
+    "babel-preset-flow": "^6.23.0",
+    "babel-preset-stage-3": "^6.24.1",
     "chalk-console": "^1.0.1",
     "conf": "^1.1.2",
     "dns-express": "^1.4.1",
     "eslint-plugin-async": "^0.1.1",
+    "eslint-plugin-flowtype": "^2.35.1",
+    "flow-bin": "^0.55.0",
     "ip-range-check": "^0.0.2",
     "lokijs": "^1.5.0",
     "multicast-dns": "^6.1.1",

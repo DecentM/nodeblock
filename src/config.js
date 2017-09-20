@@ -1,4 +1,6 @@
-const Conf = require('conf')
+// @flow
+
+import Conf from 'conf'
 
 const config = new Conf({
   'cwd':        '.',

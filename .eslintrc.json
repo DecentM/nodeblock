@@ -5,11 +5,13 @@
   },
   "plugins": [
     "security",
-    "async"
+    "async",
+    "flowtype"
   ],
   "extends": [
     "standard",
-    "nodesecurity"
+    "nodesecurity",
+    "plugin:flowtype/recommended"
   ],
   "rules": {
     "async/missing-await-in-async-fn": 0,

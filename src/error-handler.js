@@ -1,5 +1,7 @@
-const PrettyError = require('pretty-error')
-const log = require('chalk-console')
+// @flow
+
+import PrettyError from 'pretty-error'
+import log from 'chalk-console'
 const pe = new PrettyError()
 
 pe.appendStyle({
@@ -25,21 +27,26 @@ pe.appendStyle({
     'color': 'bright-white'
   }
 })
-const handle = (error) => {
+const handle = (error: Error) => {
   const rendered = pe.render(error)
 
   log.error(rendered)
 }
-const handleDomainErr = async (error, respond, question) => {
+const handleDomainErr = async (error: Object, respond: Object, question: Object) => {
   switch (error.code) {
   // If we get an answer saying that the record doesn't exist, we suppress
   // the error message and reply with an empty record
   case 'ENODATA':
-    log.info(`${question.remote.address} just asked for an empty domain\n    Domain: ${question.name}\n    Type: ${question.typeName.toUpperCase()}\n      `)
+    log.info(`${question.remote.address} just asked for an empty domain
+  Domain: ${question.name}
+  Type: ${question.typeName.toUpperCase()}
+    `)
     respond.end()
     break
   case 'ENOTFOUND':
-    log.info(`${question.remote.address} just asked for a non-existent domain\n    Domain: ${question.name}\n      `)
+    log.info(`${question.remote.address} just asked for a non-existent domain
+  Domain: ${question.name}
+    `)
     respond.end()
     break
   default:

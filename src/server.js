@@ -1,9 +1,11 @@
-const config = require('./config')
-const {handle} = require('./error-handler')
-const {db} = require('./db')
-const log = require('chalk-console')
-const dns = require('dns')
-const dnsExpress = require('dns-express')
+// @flow
+
+import config from './config'
+import {handle} from './error-handler'
+import {db} from './db'
+import log from 'chalk-console'
+import dnsExpress from 'dns-express'
+const dns: any = require('dns')
 
 const server = dnsExpress()
 // This function starts the server up
@@ -22,7 +24,9 @@ const startServer = () => {
   db().then(() => {
     dns.setServers(config.config.get('servers'))
     listenServer()
-    log.info(`Using DNS servers:\n    ${JSON.stringify(dns.getServers())}\n  `)
+    log.info(`Using DNS servers:
+  ${JSON.stringify(dns.getServers())}
+    `)
   })
   .catch((error) => {
     handle(error)

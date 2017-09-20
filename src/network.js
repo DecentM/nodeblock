@@ -1,3 +1,5 @@
+// @flow
+
 const dns = require('dns')
 const processQuestion = async (question, records) => {
   let answers = []
@@ -96,7 +98,7 @@ const dnsResolve = async (question, respond) => {
   }
 }
 
-const getRemoteRecord = async (question, respond) => {
+const getRemoteRecord = async (question: Object, respond: Object): any => {
   const records = await dnsResolve(question, respond)
   let answerRecords = records
 

@@ -1,22 +1,29 @@
+// @flow
+
+require('babel-polyfill')
+
 const {config} = require('./config')
 const {getLocalRecord} = require('./db')
 const {getRemoteRecord} = require('./network')
 const {handle} = require('./error-handler')
 const {server, startServer} = require('./server')
-// const stats = require('./stats')
+const {recordResolved} = require('./stats')
 const log = require('chalk-console')
 const ipRangeCheck = require('ip-range-check')
 
 // This promise ties getRemoteRecord and getLocalRecord together by first
 // trying to resolve itself using getLocalRecord. If that fails, we query
 // the operating system for one with getRemoteRecord
-const requestRecord = async (question, respond) => {
+const requestRecord = async (question: Object, respond: Object): Object => {
   // Try to get a cached record
   try {
     const local = await getLocalRecord(question)
 
     if (local.length === 0) {
-      return await getRemoteRecord(question, respond)
+      const remote = await getRemoteRecord(question, respond)
+
+      recordResolved(question)
+      return remote
     }
 
     return local
@@ -27,15 +34,15 @@ const requestRecord = async (question, respond) => {
 // The main app logic
 
 const run = () => {
-  server.use(async (packet, respond, next) => {
+  server.use(async (packet: Object, respond: Object, next: Function) => {
     // We only support one question, so we make sure we only have one
     const question = packet.questions[0]
 
     if (!ipRangeCheck(question.remote.address, config.get('answerRange'))) {
-      handle(new Error(`Client address is not in the permitted answer range(s):
+      throw new Error(`Client address is not in the permitted answer range(s):
     Address: ${question.remote.address},
     Permitted range(s): ${config.config.get('answerRange')}
-      `))
+      `)
     } else {
       const replies = await requestRecord(question, respond)
 

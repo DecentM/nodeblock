@@ -1,19 +1,24 @@
-const config = require('./config')
-// const logic = require('./logic')
-// const errorHandler = require('./error-handler')
-const Loki = require('lokijs')
-// const log = require('chalk-console')
+// @flow
 
-const db = () => {
+import config from './config'
+import Loki from 'lokijs'
+
+const db = (collectionName: ?String): Promise<Object> => {
   return new Promise((resolve) => {
     const autoloadCallback = () => {
-      let nodeblockCollection = lokiDb.getCollection('nodeblock')
+      let requestedCollection = collectionName
 
-      if (nodeblockCollection === null) {
-        nodeblockCollection = lokiDb.addCollection('nodeblock')
+      if (!requestedCollection) {
+        requestedCollection = 'records'
       }
 
-      resolve(nodeblockCollection)
+      let collection = lokiDb.getCollection(requestedCollection)
+
+      if (collection === null) {
+        collection = lokiDb.addCollection(requestedCollection)
+      }
+
+      resolve(collection)
     }
 
     // Use Lokijs to create our database
@@ -27,7 +32,7 @@ const db = () => {
 }
 
 // This function does the same as getRemoteRecord, just from the Lokijs database
-const getLocalRecord = async (question) => {
+const getLocalRecord = async (question: Object) => {
   // Put the search results in dbResult
   const dbQuery = {
     'name': question.name,
