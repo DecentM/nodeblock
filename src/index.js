@@ -57,9 +57,6 @@ const run = () => {
         replies.forEach((reply) => {
           respond[reply.type.toLowerCase()](reply)
         })
-      } else {
-        handle(new Error(`An empty reply came back:\n\tDomain: ${question.name}\n\tType: ${question.typeName.toUpperCase()}\n\tClient: ${question.remote.address}
-        `))
       }
       respond.end()
     } else {
