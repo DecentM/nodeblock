@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "babel src -d build && node build/index.js",
-    "dev": "rm *.db; nodemon --watch 'src/**/*.js' --exec 'babel-node' src/index.js"
+    "dev": "rm *.db; nodemon --watch 'src/**/*.js' --exec 'babel-node' src/index.js",
+    "build": "babel src -d build"
   },
   "keywords": [
     "nodejs",
@@ -41,6 +42,7 @@
     "flow-bin": "^0.55.0",
     "ip-range-check": "^0.0.2",
     "lokijs": "^1.5.0",
+    "moment": "^2.18.1",
     "multicast-dns": "^6.1.1",
     "nodemon": "^1.11.0",
     "pify": "^3.0.0",

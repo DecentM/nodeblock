@@ -1,6 +1,6 @@
 // @flow
 
-import config from './config'
+import {config} from './config'
 import {handle} from './error-handler'
 import {db} from './db'
 import log from 'chalk-console'
@@ -13,8 +13,8 @@ const listenServer = () => {
   // Try starting the dns-express server
   // If it fails, log the error and reject
   try {
-    server.listen(config.config.get('port'))
-    log.info(`DNS Server is listening on port ${config.config.get('port')}`)
+    server.listen(config.get('port'))
+    log.info(`DNS Server is listening on port ${config.get('port')}`)
   } catch (error) {
     handle(error)
   }
@@ -22,7 +22,7 @@ const listenServer = () => {
 
 const startServer = () => {
   db().then(() => {
-    dns.setServers(config.config.get('servers'))
+    dns.setServers(config.get('servers'))
     listenServer()
     log.info(`Using DNS servers:
   ${JSON.stringify(dns.getServers())}

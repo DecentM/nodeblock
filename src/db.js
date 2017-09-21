@@ -1,9 +1,9 @@
 // @flow
 
-import config from './config'
+import {config} from './config'
 import Loki from 'lokijs'
 
-const db = (collectionName: ?String): Promise<Object> => {
+const db = (collectionName: ?string): Promise<Object> => {
   return new Promise((resolve) => {
     const autoloadCallback = () => {
       let requestedCollection = collectionName
@@ -24,8 +24,8 @@ const db = (collectionName: ?String): Promise<Object> => {
     // Use Lokijs to create our database
     const lokiDb = new Loki('nodeblock.db', {
       'autoload':         true,
-      'autosave':         !!config.config.get('autosaveInterval'),
-      'autosaveInterval': config.config.get('autosaveInterval'),
+      'autosave':         !!config.get('autosaveInterval'),
+      'autosaveInterval': config.get('autosaveInterval'),
       autoloadCallback
     })
   })
@@ -45,7 +45,24 @@ const getLocalRecord = async (question: Object) => {
   return dbResult
 }
 
+const setOrUpdateRecord = async (answers: Object) => {
+  const records = await db()
+
+  answers.forEach((answer) => {
+    try {
+      records.updateWhere((obj) => {
+        return obj.name === answer.name && obj.type === answer.type
+      }, () => {
+        return answer
+      })
+    } catch (error) {
+      records.insert(answer)
+    }
+  })
+}
+
 module.exports = {
   getLocalRecord,
-  db
+  db,
+  setOrUpdateRecord
 }

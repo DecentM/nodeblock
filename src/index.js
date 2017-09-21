@@ -3,11 +3,11 @@
 require('babel-polyfill')
 
 const {config} = require('./config')
-const {getLocalRecord} = require('./db')
+const {getLocalRecord, setOrUpdateRecord} = require('./db')
 const {getRemoteRecord} = require('./network')
 const {handle} = require('./error-handler')
 const {server, startServer} = require('./server')
-const {recordResolved} = require('./stats')
+const {storeEvent} = require('./stats')
 const log = require('chalk-console')
 const ipRangeCheck = require('ip-range-check')
 
@@ -22,46 +22,52 @@ const requestRecord = async (question: Object, respond: Object): Object => {
     if (local.length === 0) {
       const remote = await getRemoteRecord(question, respond)
 
-      recordResolved(question)
+      setOrUpdateRecord(remote)
+      storeEvent('query:remote', remote)
       return remote
     }
 
+    storeEvent('query:local', local)
     return local
   } catch (error) {
     handle(error)
   }
 }
+
+const checkIpRanges = async (ip: string) => {
+  return ipRangeCheck(ip, config.get('answerRange'))
+}
+
 // The main app logic
 
 const run = () => {
   server.use(async (packet: Object, respond: Object, next: Function) => {
     // We only support one question, so we make sure we only have one
     const question = packet.questions[0]
+    const permitted = await checkIpRanges(question.remote.address)
 
-    if (!ipRangeCheck(question.remote.address, config.get('answerRange'))) {
-      throw new Error(`Client address is not in the permitted answer range(s):
-    Address: ${question.remote.address},
-    Permitted range(s): ${config.config.get('answerRange')}
-      `)
-    } else {
+    if (permitted) {
       const replies = await requestRecord(question, respond)
 
       if (replies.length !== 0) {
         log.info(`Resolved ${replies.length} record(s) for ${question.remote.address}
-    Domain: ${question.name}
-    Type: ${question.typeName.toUpperCase()}
+  Domain: ${question.name}
+  Type: ${question.typeName.toUpperCase()}
         `)
         replies.forEach((reply) => {
           respond[reply.type.toLowerCase()](reply)
         })
       } else {
-        handle(new Error(`An empty reply came back:
-    Domain: ${question.name}
-    Type: ${question.typeName.toUpperCase()}
-    Client: ${question.remote.address}
+        handle(new Error(`An empty reply came back:\n\tDomain: ${question.name}\n\tType: ${question.typeName.toUpperCase()}\n\tClient: ${question.remote.address}
         `))
       }
       respond.end()
+    } else {
+      handle(new Error(`Client address is not in the permitted answer range(s):
+  Domain: ${question.name}
+  Address: ${question.remote.address},
+  Permitted range(s):\n          ${config.get('answerRange').join('\n          ')}
+      `))
     }
   })
 

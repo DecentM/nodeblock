@@ -5,6 +5,10 @@ const processQuestion = async (question, records) => {
   let answers = []
   // This switch sets values required for different record types
 
+  if (!records[0]) {
+    return []
+  }
+
   switch (question.typeName) {
   case 'mx':
     const mxAnswers = []
@@ -16,7 +20,8 @@ const processQuestion = async (question, records) => {
         'ttl':      question.ttl || 300,
         'address':  record.name,
         'exchange': record.exchange,
-        'priority': record.priority
+        'priority': record.priority,
+        'client':   question.remote.address
       })
     })
     answers = mxAnswers
@@ -42,7 +47,8 @@ const processQuestion = async (question, records) => {
         'name':       question.name,
         'ttl':        question.ttl || 300,
         'primary':    record.primary || record.hostmaster,
-        'admin':      record.admin || record.hostmaster
+        'admin':      record.admin || record.hostmaster,
+        'client':     question.remote.address
       })
     })
     answers = soaAnswers
@@ -57,7 +63,8 @@ const processQuestion = async (question, records) => {
         'ttl':      question.ttl || 300,
         'priority': record.priority,
         'weight':   record.weight,
-        'port':     record.port
+        'port':     record.port,
+        'client':   question.remote.address
       })
     })
     answers = srvAnswers
@@ -76,12 +83,14 @@ const processQuestion = async (question, records) => {
         'name':    question.name,
         'ttl':     question.ttl || 300,
         'address': record,
-        'data':    record
+        'data':    record,
+        'client':  question.remote.address
       })
     })
     answers = stdAnswers
     break
   }
+
   return answers
 }
 

@@ -33,28 +33,12 @@ const handle = (error: Error) => {
   log.error(rendered)
 }
 const handleDomainErr = async (error: Object, respond: Object, question: Object) => {
-  switch (error.code) {
-  // If we get an answer saying that the record doesn't exist, we suppress
-  // the error message and reply with an empty record
-  case 'ENODATA':
-    log.info(`${question.remote.address} just asked for an empty domain
+  log.error(`THe native NodeJS dns module returned an error: ${error.code}
   Domain: ${question.name}
   Type: ${question.typeName.toUpperCase()}
-    `)
-    respond.end()
-    break
-  case 'ENOTFOUND':
-    log.info(`${question.remote.address} just asked for a non-existent domain
-  Domain: ${question.name}
-    `)
-    respond.end()
-    break
-  default:
-    log.error(`An error occurred while responding to ${question.remote.address}`)
-    handle(error)
-    respond.end()
-    break
-  }
+  Client: ${question.remote.address}
+  `)
+  respond.end()
 
   return true
 }
