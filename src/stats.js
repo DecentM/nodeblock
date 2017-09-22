@@ -1,4 +1,5 @@
 // @flow
+
 import {db} from './db'
 // import log from 'chalk-console'
 import moment from 'moment'
@@ -10,20 +11,18 @@ type RawStatsData = {
   client: string
 }
 
-type SingleStatsEntry = {
-  type: string,
-  name: string,
-  address: string
-}
-
 type StatsEntry = {
   time: number,
   client: string,
-  source: 'local' | 'online',
-  record: SingleStatsEntry
+  source: 'local' | 'remote',
+  record: {
+    type: string,
+    name: string,
+    address: string
+  }
 }
 
-type Source = 'local' | 'online'
+type Source = 'local' | 'remote'
 
 const constructStatsEntry = (data: RawStatsData, source: Source) => {
   const statsEntry: StatsEntry = {
@@ -49,7 +48,7 @@ const storeEvent = async (evType: string, rawData: Array<RawStatsData>) => {
     break
   case 'query:remote':
     rawData.forEach((rawRecord) => {
-      const statsEntry: StatsEntry = constructStatsEntry(rawRecord, 'online')
+      const statsEntry: StatsEntry = constructStatsEntry(rawRecord, 'remote')
 
       statsCollection.insert(statsEntry)
     })

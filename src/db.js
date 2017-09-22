@@ -3,19 +3,17 @@
 import {config} from './config'
 import Loki from 'lokijs'
 
-const db = (collectionName: ?string): Promise<Object> => {
+const db = (collectionName: string): Promise<Object> => {
   return new Promise((resolve) => {
+    if (!collectionName) {
+      throw new Error('No collection specified')
+    }
+
     const autoloadCallback = () => {
-      let requestedCollection = collectionName
-
-      if (!requestedCollection) {
-        requestedCollection = 'records'
-      }
-
-      let collection = lokiDb.getCollection(requestedCollection)
+      let collection = lokiDb.getCollection(collectionName || 'records')
 
       if (collection === null) {
-        collection = lokiDb.addCollection(requestedCollection)
+        collection = lokiDb.addCollection(collectionName || 'records')
       }
 
       resolve(collection)
@@ -39,23 +37,28 @@ const getLocalRecord = async (question: Object) => {
     'type': question.typeName.toUpperCase()
   }
 
-  const records = await db()
+  const records = await db('records')
   const dbResult = records.find(dbQuery)
 
   return dbResult
 }
 
 const setOrUpdateRecord = async (answers: Object) => {
-  const records = await db()
+  const records = await db('records')
 
   answers.forEach((answer) => {
-    try {
+    const count = records.count({
+      'name': answer.name,
+      'type': answer.type
+    })
+
+    if (count >= 1) {
       records.updateWhere((obj) => {
         return obj.name === answer.name && obj.type === answer.type
       }, () => {
         return answer
       })
-    } catch (error) {
+    } else {
       records.insert(answer)
     }
   })

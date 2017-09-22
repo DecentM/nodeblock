@@ -1,6 +1,12 @@
 // @flow
 
-const dns = require('dns')
+import os from 'os'
+import network from 'network'
+import pify from 'pify'
+import {handleDomainErr} from './error-handler'
+import {config} from './config'
+const dns: any = require('dns')
+
 const processQuestion = async (question, records) => {
   let answers = []
   // This switch sets values required for different record types
@@ -20,8 +26,7 @@ const processQuestion = async (question, records) => {
         'ttl':      question.ttl || 300,
         'address':  record.name,
         'exchange': record.exchange,
-        'priority': record.priority,
-        'client':   question.remote.address
+        'priority': record.priority
       })
     })
     answers = mxAnswers
@@ -47,8 +52,7 @@ const processQuestion = async (question, records) => {
         'name':       question.name,
         'ttl':        question.ttl || 300,
         'primary':    record.primary || record.hostmaster,
-        'admin':      record.admin || record.hostmaster,
-        'client':     question.remote.address
+        'admin':      record.admin || record.hostmaster
       })
     })
     answers = soaAnswers
@@ -63,8 +67,7 @@ const processQuestion = async (question, records) => {
         'ttl':      question.ttl || 300,
         'priority': record.priority,
         'weight':   record.weight,
-        'port':     record.port,
-        'client':   question.remote.address
+        'port':     record.port
       })
     })
     answers = srvAnswers
@@ -83,8 +86,7 @@ const processQuestion = async (question, records) => {
         'name':    question.name,
         'ttl':     question.ttl || 300,
         'address': record,
-        'data':    record,
-        'client':  question.remote.address
+        'data':    record
       })
     })
     answers = stdAnswers
@@ -93,9 +95,6 @@ const processQuestion = async (question, records) => {
 
   return answers
 }
-
-const pify = require('pify')
-const {handleDomainErr} = require('./error-handler')
 
 const dnsResolve = async (question, respond) => {
   try {
@@ -120,6 +119,21 @@ const getRemoteRecord = async (question: Object, respond: Object): any => {
   return answers
 }
 
+const getHostname = async (ip: string) => {
+  if (ip === '127.0.0.1') {
+    return os.hostname()
+  }
+
+  const gateway = await pify(network.get_gateway_ip)()
+
+  dns.setServers([ gateway ])
+  const resolved = await pify(dns.reverse)(ip)
+
+  dns.setServers(config.get('servers'))
+  return resolved
+}
+
 module.exports = {
-  getRemoteRecord
+  getRemoteRecord,
+  getHostname
 }

@@ -21,10 +21,10 @@ const listenServer = () => {
 }
 
 const startServer = () => {
-  db().then(() => {
+  db('records').then(() => {
     dns.setServers(config.get('servers'))
     listenServer()
-    log.info(`Using DNS servers:
+    log.info(`Using DNS servers for recursion:
   ${JSON.stringify(dns.getServers())}
     `)
   })

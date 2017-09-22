@@ -1,15 +1,15 @@
 // @flow
 
-require('babel-polyfill')
+import 'babel-polyfill'
 
-const {config} = require('./config')
-const {getLocalRecord, setOrUpdateRecord} = require('./db')
-const {getRemoteRecord} = require('./network')
-const {handle} = require('./error-handler')
-const {server, startServer} = require('./server')
-const {storeEvent} = require('./stats')
-const log = require('chalk-console')
-const ipRangeCheck = require('ip-range-check')
+import {config} from './config'
+import {getLocalRecord, setOrUpdateRecord} from './db'
+import {getRemoteRecord, getHostname} from './network'
+import {handle} from './error-handler'
+import {server, startServer} from './server'
+import {storeEvent} from './stats'
+import log from 'chalk-console'
+import ipRangeCheck from 'ip-range-check'
 
 // This promise ties getRemoteRecord and getLocalRecord together by first
 // trying to resolve itself using getLocalRecord. If that fails, we query
@@ -22,12 +22,23 @@ const requestRecord = async (question: Object, respond: Object): Object => {
     if (local.length === 0) {
       const remote = await getRemoteRecord(question, respond)
 
-      setOrUpdateRecord(remote)
-      storeEvent('query:remote', remote)
+      await setOrUpdateRecord(remote)
+      await storeEvent('query:remote', remote)
+
+      remote.source = 'remote'
+      remote.client = question.remote.address
       return remote
     }
 
-    storeEvent('query:local', local)
+    getRemoteRecord(question, respond)
+    .then(async (remote) => {
+      await setOrUpdateRecord(remote)
+    })
+
+    await storeEvent('query:local', local)
+
+    local.source = 'local'
+    local.client = question.remote.address
     return local
   } catch (error) {
     handle(error)
@@ -39,7 +50,6 @@ const checkIpRanges = async (ip: string) => {
 }
 
 // The main app logic
-
 const run = () => {
   server.use(async (packet: Object, respond: Object, next: Function) => {
     // We only support one question, so we make sure we only have one
@@ -50,10 +60,25 @@ const run = () => {
       const replies = await requestRecord(question, respond)
 
       if (replies.length !== 0) {
-        log.info(`Resolved ${replies.length} record(s) for ${question.remote.address}
+        try {
+          const hostname = await getHostname(question.remote.address)
+
+          log.info(`Resolved ${replies.length} record(s)
+  Source: ${replies.source}
+  Client: ${hostname}
   Domain: ${question.name}
   Type: ${question.typeName.toUpperCase()}
-        `)
+          `)
+        } catch (error) {
+          handle(error)
+
+          log.info(`Resolved ${replies.length} record(s)
+  Source: ${replies.source}
+  Client: ${question.remote.address}
+  Domain: ${question.name}
+  Type: ${question.typeName.toUpperCase()}
+          `)
+        }
         replies.forEach((reply) => {
           respond[reply.type.toLowerCase()](reply)
         })
