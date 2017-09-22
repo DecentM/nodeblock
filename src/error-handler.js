@@ -33,7 +33,7 @@ const handle = (error: Error) => {
   log.error(rendered)
 }
 const handleDomainErr = async (error: Object, respond: Object, question: Object) => {
-  log.error(`THe native NodeJS dns module returned an error: ${error.code}
+  log.error(`The native NodeJS dns module returned an error: ${error.code}
   Domain: ${question.name}
   Type: ${question.typeName.toUpperCase()}
   Client: ${question.remote.address}
