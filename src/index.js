@@ -50,7 +50,7 @@ const checkIpRanges = async (ip: string) => {
 }
 
 // The main app logic
-const run = () => {
+const run = async () => {
   server.use(async (packet: Object, respond: Object, next: Function) => {
     // We only support one question, so we make sure we only have one
     const question = packet.questions[0]
@@ -70,8 +70,6 @@ const run = () => {
   Type: ${question.typeName.toUpperCase()}
           `)
         } catch (error) {
-          handle(error)
-
           log.info(`Resolved ${replies.length} record(s)
   Source: ${replies.source}
   Client: ${question.remote.address}
@@ -94,7 +92,9 @@ const run = () => {
   })
 
   log.info('Nodeblock is starting')
-  startServer()
+  await startServer()
 }
 
-run()
+(async () => {
+  await run()
+})()

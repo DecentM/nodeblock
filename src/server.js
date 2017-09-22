@@ -20,18 +20,14 @@ const listenServer = () => {
   }
 }
 
-const startServer = () => {
-  db('records').then(() => {
-    dns.setServers(config.get('servers'))
-    listenServer()
-    log.info(`Using DNS servers for recursion:
+const startServer = async () => {
+  await db()
+
+  dns.setServers(config.get('servers'))
+  listenServer()
+  log.info(`Using DNS servers for recursion:
   ${JSON.stringify(dns.getServers())}
-    `)
-  })
-  .catch((error) => {
-    handle(error)
-    throw error
-  })
+  `)
 }
 
 module.exports = {

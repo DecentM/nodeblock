@@ -40,7 +40,8 @@ const constructStatsEntry = (data: RawStatsData, source: Source) => {
 }
 
 const storeEvent = async (evType: string, rawData: Array<RawStatsData>) => {
-  const statsCollection = await db('stats')
+  const dbase = await db()
+  const statsCollection = dbase.getCollection('stats')
 
   switch (evType) {
   case 'query:local':

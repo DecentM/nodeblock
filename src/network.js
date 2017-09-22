@@ -4,7 +4,7 @@ import os from 'os'
 import network from 'network'
 import pify from 'pify'
 import {handleDomainErr} from './error-handler'
-import {config} from './config'
+import {isEqual} from 'lodash'
 const dns: any = require('dns')
 
 const processQuestion = async (question, records) => {
@@ -126,11 +126,13 @@ const getHostname = async (ip: string) => {
 
   const gateway = await pify(network.get_gateway_ip)()
 
-  dns.setServers([ gateway ])
-  const resolved = await pify(dns.reverse)(ip)
+  if (isEqual(dns.getServers(), Array(gateway))) {
+    const resolved = await pify(dns.reverse)(ip)
 
-  dns.setServers(config.get('servers'))
-  return resolved
+    return resolved
+  }
+
+  throw new Error('The DNS server and the gateway are not the same')
 }
 
 module.exports = {

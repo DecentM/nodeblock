@@ -2,31 +2,38 @@
 
 import {config} from './config'
 import Loki from 'lokijs'
+import log from 'chalk-console'
 
-const db = (collectionName: string): Promise<Object> => {
-  return new Promise((resolve) => {
-    if (!collectionName) {
-      throw new Error('No collection specified')
+const collectionNames = [
+  'stats',
+  'records'
+]
+
+const autoloadCallback = () => {
+  collectionNames.forEach((collectionName) => {
+    let collection = lokiDb.getCollection(collectionName)
+
+    log.info(`Collection ${collectionName} loading`)
+
+    if (collection === null) {
+      log.info(`Populating database with collection: ${collectionName}`)
+      collection = lokiDb.addCollection(collectionName)
     }
-
-    const autoloadCallback = () => {
-      let collection = lokiDb.getCollection(collectionName || 'records')
-
-      if (collection === null) {
-        collection = lokiDb.addCollection(collectionName || 'records')
-      }
-
-      resolve(collection)
-    }
-
-    // Use Lokijs to create our database
-    const lokiDb = new Loki('nodeblock.db', {
-      'autoload':         true,
-      'autosave':         !!config.get('autosaveInterval'),
-      'autosaveInterval': config.get('autosaveInterval'),
-      autoloadCallback
-    })
   })
+
+  log.info(`Database ready with collections: ${collectionNames.join(', ')}`)
+}
+
+// Use Lokijs to create our database
+const lokiDb = new Loki('nodeblock.db', {
+  'autoload':         true,
+  'autosave':         !!config.get('autosaveInterval'),
+  'autosaveInterval': config.get('autosaveInterval'),
+  autoloadCallback
+})
+
+const db = async () => {
+  return lokiDb
 }
 
 // This function does the same as getRemoteRecord, just from the Lokijs database
@@ -37,14 +44,16 @@ const getLocalRecord = async (question: Object) => {
     'type': question.typeName.toUpperCase()
   }
 
-  const records = await db('records')
+  const dbase = await db()
+  const records = dbase.getCollection('records')
   const dbResult = records.find(dbQuery)
 
   return dbResult
 }
 
 const setOrUpdateRecord = async (answers: Object) => {
-  const records = await db('records')
+  const dbase = await db()
+  const records = dbase.getCollection('records')
 
   answers.forEach((answer) => {
     const count = records.count({
