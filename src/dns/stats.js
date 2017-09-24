@@ -1,5 +1,7 @@
 // @flow
 
+// Avg size of a DNS packet is 95 bytes
+
 import {db} from './db'
 // import log from 'chalk-console'
 import moment from 'moment'

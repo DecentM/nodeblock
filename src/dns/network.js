@@ -5,6 +5,7 @@ import network from 'network'
 import pify from 'pify'
 import {handleDomainErr} from './error-handler'
 import {isEqual} from 'lodash'
+import log from 'chalk-console'
 const dns: any = require('dns')
 
 const processQuestion = async (question, records) => {
@@ -107,6 +108,40 @@ const dnsResolve = async (question, respond) => {
 }
 
 const getRemoteRecord = async (question: Object, respond: Object): any => {
+  if (question.remote.address === '127.0.0.1') {
+    let internalCmd = null
+
+    try {
+      internalCmd = String(question.name.match(/^nodeblock:(.*)/g)[0]).split(':')[1]
+    } catch (error) {
+      internalCmd = null
+    }
+
+    if (internalCmd) {
+      switch (internalCmd) {
+      case 'quit':
+        log.warn(`Process ${process.pid} is exiting due to internal command`)
+        respond.end()
+        setImmediate(() => {
+          process.exit() // eslint-disable-line no-process-exit
+        })
+        break
+      case 'ping':
+        return [ {
+          'type':     'A',
+          'name':     'nodeblock:ping',
+          'ttl':      1,
+          'address':  '127.0.0.1',
+          'data':     '127.0.0.1',
+          'internal': true
+        } ]
+      default:
+        log.error('Missing or unknown internal command')
+        break
+      }
+    }
+  }
+
   const records = await dnsResolve(question, respond)
   let answerRecords = records
 

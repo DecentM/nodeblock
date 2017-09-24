@@ -9,30 +9,39 @@ const collectionNames = [
   'records'
 ]
 
-const autoloadCallback = () => {
-  collectionNames.forEach((collectionName) => {
-    let collection = lokiDb.getCollection(collectionName)
-
-    log.info(`Collection ${collectionName} loading`)
-
-    if (collection === null) {
-      log.info(`Populating database with collection: ${collectionName}`)
-      collection = lokiDb.addCollection(collectionName)
-    }
-  })
-
-  log.info(`Database ready with collections: ${collectionNames.join(', ')}`)
-}
+let lokiDb: any = null
 
 // Use Lokijs to create our database
-const lokiDb = new Loki('nodeblock.db', {
-  'autoload':         true,
-  'autosave':         !!config.get('autosaveInterval'),
-  'autosaveInterval': config.get('autosaveInterval'),
-  autoloadCallback
-})
+const initializeLoki = () => {
+  return new Promise((resolve, reject) => {
+    lokiDb = new Loki('nodeblock.db', {
+      'autoload':         true,
+      'autosave':         !!config.get('autosaveInterval'),
+      'autosaveInterval': config.get('autosaveInterval'),
+      'autoloadCallback': () => {
+        collectionNames.forEach((collectionName) => {
+          let collection = lokiDb.getCollection(collectionName)
+
+          log.info(`Collection ${collectionName} loading`)
+
+          if (collection === null) {
+            log.info(`Populating database with collection: ${collectionName}`)
+            collection = lokiDb.addCollection(collectionName)
+          }
+        })
+
+        log.info(`Database ready with collections: ${collectionNames.join(', ')}`)
+        resolve()
+      }
+    })
+  })
+}
 
 const db = async () => {
+  if (!lokiDb) {
+    await initializeLoki()
+  }
+
   return lokiDb
 }
 
