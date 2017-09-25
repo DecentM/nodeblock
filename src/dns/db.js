@@ -6,7 +6,8 @@ import log from 'chalk-console'
 
 const collectionNames = [
   'stats',
-  'records'
+  'records',
+  'queue'
 ]
 
 let lokiDb: any = null

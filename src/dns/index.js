@@ -3,7 +3,7 @@
 import 'babel-polyfill'
 
 import {config} from './config'
-import {getLocalRecord, setOrUpdateRecord} from './db'
+import {getLocalRecord, setOrUpdateRecord, db} from './db'
 import {getRemoteRecord, getHostname} from './network'
 import {handle} from './error-handler'
 import {server, startServer} from './server'
