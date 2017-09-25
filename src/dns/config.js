@@ -1,8 +1,12 @@
 // @flow
+/* eslint no-process-env:0 */
 
 import Conf from 'conf'
+import {forIn} from 'lodash'
+import network from 'network'
+import log from 'chalk-console'
 
-const defaultConfig = {
+const initialConfig = {
   'port':             53,
   'autosaveInterval': 10000,
   'answerRange':      [
@@ -18,11 +22,65 @@ const defaultConfig = {
   ]
 }
 
+/* try {
+  network.get_gateway_ip((ip) => {
+    defaultConfig.servers = [
+      ip
+    ]
+  })
+} catch (error) {
+  log.warn('Nodeblock was\'t able to determine the default gateway, default recursors will be used')
+} */
+
+const formatToJsonType = (data, toType) => {
+  // const fromType = typeof data
+  const toArray = toType instanceof Array
+  let converted = null
+
+  switch (toArray || typeof toType) {
+  case 'string':
+    converted = String(data)
+    break
+  case 'object':
+    converted = JSON.parse(data) || Object(data)
+    break
+  case true:
+    converted = Array(data)
+    break
+  default:
+    break
+  }
+
+  return converted
+}
+
 const config = new Conf({
   'cwd':        '.',
   'configName': 'nodeblock.conf',
-  'defaults':   defaultConfig
+  'defaults':   initialConfig
 })
+
+forIn(process.env, (envValue, envName) => {
+  const regexp = /^NODEBLOCK_(.*)/g
+  let found = envName.match(regexp)
+
+  if (found) {
+    let arrayValue = null
+
+    if (envValue.includes(',')) {
+      arrayValue = envValue.split(',')
+    }
+
+    found = found[0].split('_')[1]
+
+    forIn(initialConfig, (initialValue, initialName) => {
+      if (found === initialName) {
+        config.set(initialName, formatToJsonType(arrayValue || envValue, initialConfig[initialName]))
+      }
+    })
+  }
+})
+
 const configObj = config.get()
 
 module.exports = {
