@@ -1,9 +1,0 @@
-version: "3"
-
-services:
-  nodeblock:
-    image: decentm/nodeblock
-    environment:
-      - "NODEBLOCK_port=53"
-      - "NODEBLOCK_autosaveInterval=10000"
-      - "NODEBLOCK_servers=8.8.8.8,8.8.4.4"
