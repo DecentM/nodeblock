@@ -1,17 +1,15 @@
-// import {DNS} from './dns'
-import {Server} from './server'
+import {ApolloServer} from 'apollo-server'
+import {createSchema} from './graphql/schema';
+import { createContext } from 'graphql/context';
 
-// const client = new DNS({
-//   servers: [
-//     '1.1.1.1',
-//     '1.0.0.1',
-//   ]
-// })
+const server = new ApolloServer({
+  playground: true,
+  schema: createSchema(),
+  context: createContext,
+});
 
-const server = new Server({
-  port: 5353,
-})
+(async () => {
+  const info = await server.listen()
 
-server.listen().then(() => console.log('all servers listening'))
-
-// client.query('example.com', 'A').then(console.log)
+  console.log('listening', info.url)
+})()
