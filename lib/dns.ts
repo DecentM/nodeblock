@@ -2,6 +2,7 @@ import * as dns from 'dns'
 
 import {NexusGenAllTypes} from 'services/graphql/schema/generated/nexus/types'
 import {RRHex} from 'lib/rrtypes'
+import { DNSCache } from './dns-cache'
 
 type DNSOptions = {
   servers: string[],
@@ -23,154 +24,184 @@ const handleError = (error: NodeJS.ErrnoException) => {
 }
 
 export class DNS {
+  private cache: DNSCache
+
   constructor (options: DNSOptions) {
+    this.cache = new DNSCache()
+
     dns.setServers(options.servers)
   }
 
-  public query = (domain: string, rrhex: RRHex): Promise<ResolveValue<'AnyResolutionRecord'>[]> => new Promise((resolve, reject) => {
-    let resolver = null
+  private resolveFromUpstream = async (domain: string, rrhex: RRHex): Promise<ResolveValue<'AnyResolutionRecord'>[]> => {
+    let dnsResolver = null
 
     switch (rrhex) {
       case RRHex.A:
-        resolver = (hostname, callback) => dns.resolve(hostname, 'A', callback)
+        dnsResolver = (hostname, callback) => dns.resolve(hostname, 'A', callback)
         break
       case RRHex.AAAA:
-        resolver = (hostname, callback) => dns.resolve(hostname, 'AAAA', callback)
+        dnsResolver = (hostname, callback) => dns.resolve(hostname, 'AAAA', callback)
         break
       case RRHex.CNAME:
-        resolver = dns.resolveCname
+        dnsResolver = dns.resolveCname
         break
       case RRHex.MX:
-        resolver = dns.resolveMx
+        dnsResolver = dns.resolveMx
         break
       case RRHex.NAPTR:
-        resolver = dns.resolveNaptr
+        dnsResolver = dns.resolveNaptr
         break
       case RRHex.NS:
-        resolver = dns.resolveNs
+        dnsResolver = dns.resolveNs
         break
       case RRHex.PTR:
-        resolver = dns.resolvePtr
+        dnsResolver = dns.resolvePtr
         break
       case RRHex.SOA:
-        resolver = dns.resolveSoa
+        dnsResolver = dns.resolveSoa
         break
       case RRHex.SRV:
-        resolver = dns.resolveSrv
+        dnsResolver = dns.resolveSrv
         break
       case RRHex.TXT:
-        resolver = dns.resolveTxt
-        break
-      default:
-        console.log({rrhex})
+        dnsResolver = dns.resolveTxt
         break
     }
 
-    if (!resolver) {
-      return reject(new Error('No resolver found for this type. This is a developer error, please report it along with the query you just ran.'))
+    if (!dnsResolver) {
+      return []
     }
 
-    resolver(domain, (error, rawResults = []) => {
+    const resolve = (domain: string) => new Promise((resolve, reject) => dnsResolver(domain, (error, data) => {
       if (error) {
-        const unhandled = handleError(error)
-
-        if (unhandled) {
-          return reject(error)
-        } else {
-          return resolve([])
-        }
+        return reject(error)
       }
 
-      let results = rawResults
+      return resolve(data)
+    }))
 
-      if (!Array.isArray(results)) {
-        results = [ results ]
+    let results = null
+
+    try {
+      results = await resolve(domain)
+    } catch (error) {
+      const unhandled = handleError(error)
+
+      if (unhandled) {
+        throw error
+      } else {
+        return []
       }
+    }
 
-      return resolve(results.map((rawResult) => {
-        const result = Array.isArray(rawResult) ? rawResult : [ rawResult ]
+    return results
+  }
 
-        switch (rrhex) {
-          case RRHex.A:
-            const a: ResolveValue<'AnyARecord'> = {
-              rrhex,
-              address: result,
-              ttl: 3600,
-            }
+  public query = async (domain: string, rrhex: RRHex): Promise<ResolveValue<'AnyResolutionRecord'>[]> => {
+    const exists = await this.cache.get(domain, rrhex)
 
-            return a
-          case RRHex.AAAA:
-            const aaaa: ResolveValue<'AnyAaaaRecord'> = {
-              rrhex,
-              address: result,
-              ttl: 3600,
-            }
+    if (exists) {
+      try {
+        return this.transformResults(JSON.parse(exists), rrhex)
+      } catch (error) {
+        await this.cache.remove(domain, rrhex)
+      }
+    }
 
-            return aaaa
-          case RRHex.CNAME:
-            const cname: ResolveValue<'AnyCnameRecord'> = {
-              rrhex,
-              value: rawResult,
-            }
+    const fromRemote = await this.resolveFromUpstream(domain, rrhex)
 
-            return cname
-          case RRHex.MX:
-            const mx: ResolveValue<'AnyMxRecord'> = {
-              rrhex,
-              exchange: result.map((item) => item.exchange),
-              priority: result.map((item) => item.priority),
-            }
+    await this.cache.set(domain, rrhex, JSON.stringify(fromRemote))
 
-            return mx
-          case RRHex.NAPTR:
-            const naptr: ResolveValue<'AnyNaptrRecord'> = {
-              rrhex,
-              ...rawResult,
-            }
+    return this.transformResults(fromRemote, rrhex)
+  }
 
-            return naptr
-          case RRHex.SOA:
-            const soa: ResolveValue<'AnySoaRecord'> = {
-              rrhex,
-              ...rawResult,
-            }
+  private transformResults = (results, rrhex: RRHex) => {
+    if (!Array.isArray(results)) {
+      results = [ results ]
+    }
 
-            return soa
-          case RRHex.NS:
-            const ns: ResolveValue<'AnyNsRecord'> = {
-              rrhex,
-              value: rawResult,
-            }
+    return results.map((rawResult) => {
+      const result = Array.isArray(rawResult) ? rawResult : [rawResult]
 
-            return ns
-          case RRHex.PTR:
-            const ptr: ResolveValue<'AnyPtrRecord'> = {
-              rrhex,
-              value: rawResult,
-            }
+      switch (rrhex) {
+        case RRHex.A:
+          const a: ResolveValue<'AnyARecord'> = {
+            rrhex,
+            address: result,
+            ttl: 3600,
+          }
 
-            return ptr
-          case RRHex.SRV:
-            const srv: ResolveValue<'AnySrvRecord'> = {
-              rrhex,
-              ...rawResult
-            }
+          return a
+        case RRHex.AAAA:
+          const aaaa: ResolveValue<'AnyAaaaRecord'> = {
+            rrhex,
+            address: result,
+            ttl: 3600,
+          }
 
-            return srv
-          case RRHex.TXT:
-            const txt: ResolveValue<'AnyTxtRecord'> = {
-              rrhex,
-              entries: rawResult
-            }
+          return aaaa
+        case RRHex.CNAME:
+          const cname: ResolveValue<'AnyCnameRecord'> = {
+            rrhex,
+            value: rawResult,
+          }
 
-            return txt
-          default:
-            return {
-              rrhex,
-            }
-        }
-      }))
+          return cname
+        case RRHex.MX:
+          const mx: ResolveValue<'AnyMxRecord'> = {
+            rrhex,
+            exchange: result.map((item) => item.exchange),
+            priority: result.map((item) => item.priority),
+          }
 
+          return mx
+        case RRHex.NAPTR:
+          const naptr: ResolveValue<'AnyNaptrRecord'> = {
+            rrhex,
+            ...rawResult,
+          }
+
+          return naptr
+        case RRHex.SOA:
+          const soa: ResolveValue<'AnySoaRecord'> = {
+            rrhex,
+            ...rawResult,
+          }
+
+          return soa
+        case RRHex.NS:
+          const ns: ResolveValue<'AnyNsRecord'> = {
+            rrhex,
+            value: rawResult,
+          }
+
+          return ns
+        case RRHex.PTR:
+          const ptr: ResolveValue<'AnyPtrRecord'> = {
+            rrhex,
+            value: rawResult,
+          }
+
+          return ptr
+        case RRHex.SRV:
+          const srv: ResolveValue<'AnySrvRecord'> = {
+            rrhex,
+            ...rawResult
+          }
+
+          return srv
+        case RRHex.TXT:
+          const txt: ResolveValue<'AnyTxtRecord'> = {
+            rrhex,
+            entries: rawResult
+          }
+
+          return txt
+        default:
+          return {
+            rrhex,
+          }
+      }
     })
-  })
+  }
 }
