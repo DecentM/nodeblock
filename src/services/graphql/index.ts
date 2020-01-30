@@ -1,9 +1,11 @@
 import {ApolloServer} from 'apollo-server'
 import {createSchema} from './schema';
-import {createContext} from './context';
+import {createContextCreator} from './context';
 import {Service} from 'services/types';
 
 export const start = async (): Promise<Service> => {
+  const createContext = createContextCreator()
+
   const server = new ApolloServer({
     playground: true,
     schema: createSchema(),
