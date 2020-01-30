@@ -1,19 +1,21 @@
 import * as dns from 'dns'
 
-import {NexusGenAllTypes} from 'graphql/schema/generated/nexus/types'
-import { RRTypes } from 'lib/rrtypes'
+import {NexusGenAllTypes} from 'services/graphql/schema/generated/nexus/types'
+import {RRHex} from 'lib/rrtypes'
 
 type DNSOptions = {
   servers: string[],
 }
 
-type ResolveValue<NexusType extends keyof NexusGenAllTypes> = NexusGenAllTypes[NexusType] & {
-  rrtype: RRTypes
+export type ResolveValue<NexusType extends keyof NexusGenAllTypes> = NexusGenAllTypes[NexusType] & {
+  rrhex: RRHex
 }
 
 const handleError = (error: NodeJS.ErrnoException) => {
   switch (error.code) {
     case 'ENODATA':
+      return null
+    case 'ENOTFOUND':
       return null
   }
 
@@ -25,39 +27,42 @@ export class DNS {
     dns.setServers(options.servers)
   }
 
-  public query = (domain: string, rrtype: RRTypes): Promise<ResolveValue<'AnyResolutionRecord'>[]> => new Promise((resolve, reject) => {
+  public query = (domain: string, rrhex: RRHex): Promise<ResolveValue<'AnyResolutionRecord'>[]> => new Promise((resolve, reject) => {
     let resolver = null
 
-    switch (rrtype) {
-      case RRTypes.A:
+    switch (rrhex) {
+      case RRHex.A:
         resolver = (hostname, callback) => dns.resolve(hostname, 'A', callback)
         break
-      case RRTypes.AAAA:
+      case RRHex.AAAA:
         resolver = (hostname, callback) => dns.resolve(hostname, 'AAAA', callback)
         break
-      case RRTypes.CNAME:
+      case RRHex.CNAME:
         resolver = dns.resolveCname
         break
-      case RRTypes.MX:
+      case RRHex.MX:
         resolver = dns.resolveMx
         break
-      case RRTypes.NAPTR:
+      case RRHex.NAPTR:
         resolver = dns.resolveNaptr
         break
-      case RRTypes.NS:
+      case RRHex.NS:
         resolver = dns.resolveNs
         break
-      case RRTypes.PTR:
+      case RRHex.PTR:
         resolver = dns.resolvePtr
         break
-      case RRTypes.SOA:
+      case RRHex.SOA:
         resolver = dns.resolveSoa
         break
-      case RRTypes.SRV:
+      case RRHex.SRV:
         resolver = dns.resolveSrv
         break
-      case RRTypes.TXT:
+      case RRHex.TXT:
         resolver = dns.resolveTxt
+        break
+      default:
+        console.log({rrhex})
         break
     }
 
@@ -85,83 +90,83 @@ export class DNS {
       return resolve(results.map((rawResult) => {
         const result = Array.isArray(rawResult) ? rawResult : [ rawResult ]
 
-        switch (rrtype) {
-          case RRTypes.A:
+        switch (rrhex) {
+          case RRHex.A:
             const a: ResolveValue<'AnyARecord'> = {
-              rrtype,
+              rrhex,
               address: result,
               ttl: 3600,
             }
 
             return a
-          case RRTypes.AAAA:
+          case RRHex.AAAA:
             const aaaa: ResolveValue<'AnyAaaaRecord'> = {
-              rrtype,
+              rrhex,
               address: result,
               ttl: 3600,
             }
 
             return aaaa
-          case RRTypes.CNAME:
+          case RRHex.CNAME:
             const cname: ResolveValue<'AnyCnameRecord'> = {
-              rrtype,
+              rrhex,
               value: rawResult,
             }
 
             return cname
-          case RRTypes.MX:
+          case RRHex.MX:
             const mx: ResolveValue<'AnyMxRecord'> = {
-              rrtype,
+              rrhex,
               exchange: result.map((item) => item.exchange),
               priority: result.map((item) => item.priority),
             }
 
             return mx
-          case RRTypes.NAPTR:
+          case RRHex.NAPTR:
             const naptr: ResolveValue<'AnyNaptrRecord'> = {
-              rrtype,
+              rrhex,
               ...rawResult,
             }
 
             return naptr
-          case RRTypes.SOA:
+          case RRHex.SOA:
             const soa: ResolveValue<'AnySoaRecord'> = {
-              rrtype,
+              rrhex,
               ...rawResult,
             }
 
             return soa
-          case RRTypes.NS:
+          case RRHex.NS:
             const ns: ResolveValue<'AnyNsRecord'> = {
-              rrtype,
+              rrhex,
               value: rawResult,
             }
 
             return ns
-          case RRTypes.PTR:
+          case RRHex.PTR:
             const ptr: ResolveValue<'AnyPtrRecord'> = {
-              rrtype,
+              rrhex,
               value: rawResult,
             }
 
             return ptr
-          case RRTypes.SRV:
+          case RRHex.SRV:
             const srv: ResolveValue<'AnySrvRecord'> = {
-              rrtype,
+              rrhex,
               ...rawResult
             }
 
             return srv
-          case RRTypes.TXT:
+          case RRHex.TXT:
             const txt: ResolveValue<'AnyTxtRecord'> = {
-              rrtype,
+              rrhex,
               entries: rawResult
             }
 
             return txt
           default:
             return {
-              rrtype,
+              rrhex,
             }
         }
       }))

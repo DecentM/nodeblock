@@ -1,9 +1,10 @@
-import {RRTypes} from 'lib/rrtypes'
+import {RRTypes, RRHex} from 'lib/rrtypes'
 import {extendType, inputObjectType, enumType, objectType, unionType, interfaceType} from "nexus";
+import { ResolveValue } from 'lib/dns';
 
 // Enums contain their KV pairs in reverse order as well, so we filter to get
 // only the textual ones
-const rrTypes = Object.keys(RRTypes).filter((value) => Number.isNaN(parseInt(value, 10)))
+const rrTypes = Object.keys(RRHex).filter((value) => Number.isNaN(parseInt(value, 10)))
 
 const RRType = enumType({
   name: 'RRType',
@@ -235,8 +236,10 @@ export const AnyResolutionRecord = unionType({
       'AnyTxtRecord'
     )
 
-    t.resolveType((source: any, context, info) => {
-      return `Any${source.rrtype}Record` as any
+    t.resolveType((source: ResolveValue<'AnyResolutionRecord'>, context, info) => {
+      const type = RRTypes[RRHex[source.rrhex]]
+
+      return `Any${type}Record` as any
     })
   }
 })
@@ -251,7 +254,7 @@ export const ResolveNameQuery = extendType({
         input: Input.asArg({required: true})
       },
       resolve (root, {input}, context) {
-        return context.dns.query(input.domain, RRTypes[input.type])
+        return context.dns.query(input.domain, RRHex[input.type])
       }
     })
   }

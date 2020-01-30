@@ -1,4 +1,4 @@
-import {DNS} from "../../dns"
+import {DNS} from "lib/dns"
 
 export type Context = {
   dns: DNS

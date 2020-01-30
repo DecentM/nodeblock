@@ -37,3 +37,33 @@ export enum RRTypes {
   // TLSA,
   // X25,
 }
+
+export enum RRHex {
+  A = 0x01,
+  AAAA = 0x1C,
+  CNAME = 0x05,
+  MX = 0x0F,
+  NS = 0x02,
+  PTR = 0x0C,
+  SOA = 0x06,
+  SRV = 0x21,
+  TXT = 0x10,
+
+  NAPTR = 0x23,
+
+  // MD = 0x03,
+  // MF = 0x04,
+  // MB = 0x07,
+  // MG = 0x08,
+  // MR = 0x09,
+  // NULL = 0x0A,
+  // WKS = 0x0B,
+  // HINFO = 0x0D,
+  // MINFO = 0x0E,
+  // SPF = 0x63,
+  // AXFR = 0xFC,
+  // MAILB = 0xFD,
+  // MAILA = 0xFE,
+  // ANY = 0xFF,
+  // CAA = 0x101,
+}

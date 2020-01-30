@@ -17,7 +17,8 @@
     }
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "lib/**/*"
   ],
   "exclude": [
     ".git",

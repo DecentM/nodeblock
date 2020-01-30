@@ -1,15 +1,27 @@
-import {ApolloServer} from 'apollo-server'
-import {createSchema} from './graphql/schema';
-import { createContext } from 'graphql/context';
+import {start as startGraphql} from './services/graphql'
+import {start as startDns} from './services/dns'
 
-const server = new ApolloServer({
-  playground: true,
-  schema: createSchema(),
-  context: createContext,
-});
+import { Service } from 'services/types'
 
-(async () => {
-  const info = await server.listen()
+const main = async (): Promise<Service> => {
+  const services = await Promise.all([
+    startGraphql(),
+    startDns()
+  ])
 
-  console.log('listening', info.url)
-})()
+  return {
+    shutdown: async () => {
+      await Promise.all(services.map((service) => service.shutdown()))
+    }
+  }
+}
+
+main()
+.then((service) => {
+  process.on('SIGINT', service.shutdown)
+  process.on('unhandledRejection', (error) => {
+    console.error(error)
+    service.shutdown()
+  })
+})
+.catch(console.error)
